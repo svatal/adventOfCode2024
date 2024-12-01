@@ -1,4 +1,4 @@
-import { doIt } from "./1";
+import { doIt } from "./01";
 
 const start = Date.now();
 let lastReport = start;
