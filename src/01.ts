@@ -7,20 +7,14 @@ export function doIt(progress: (...params: any[]) => void) {
     .map((line) => line.split("   ").map((num) => parseInt(num, 10)));
   const left = parsed.map((line) => line[0]).sort((a, b) => a - b);
   const right = parsed.map((line) => line[1]).sort((a, b) => a - b);
-  let first = 0;
-  for (let i = 0; i < left.length; i++) {
-    first += Math.abs(left[i] - right[i]);
-  }
 
-  const rightSet = new Map<number, number>();
-  for (let i = 0; i < right.length; i++) {
-    rightSet.set(right[i], (rightSet.get(right[i]) || 0) + 1);
-  }
-  let second = 0;
-  for (let i = 0; i < left.length; i++) {
-    const l = left[i];
-    second += l * (rightSet.get(l) ?? 0);
-  }
+  const first = left.reduce((acc, l, i) => acc + Math.abs(l - right[i]), 0);
+
+  const rightSet = right.reduce(
+    (acc, r) => acc.set(r, (acc.get(r) ?? 0) + 1),
+    new Map<number, number>()
+  );
+  const second = left.reduce((acc, l) => acc + (rightSet.get(l) ?? 0) * l, 0);
 
   console.log(first, second);
 }
