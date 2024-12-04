@@ -1,93 +1,56 @@
 // import { testInput as input } from "./04-input";
 import { input } from "./04-input";
 import { IPosition, valueInMap } from "./utils/position2D";
-import { prefillArray } from "./utils/util";
 
 export function doIt(progress: (...params: any[]) => void) {
   const parsed = input.split(`\n`).map((line) => line.split(""));
-  const reads = [
-    ...prefillArray(parsed.length, (idx) => ({ x: 0, y: idx })).map(
-      (startPos) => followDirection(parsed, startPos, 1, 0)
-    ),
-    ...prefillArray(parsed.length, (idx) => ({
-      x: parsed[0].length - 1,
-      y: idx,
-    })).map((startPos) => followDirection(parsed, startPos, -1, 0)),
-    ...prefillArray(parsed[0].length, (idx) => ({ x: idx, y: 0 })).map(
-      (startPos) => followDirection(parsed, startPos, 0, 1)
-    ),
-    ...prefillArray(parsed[0].length, (idx) => ({
-      x: idx,
-      y: parsed.length - 1,
-    })).map((startPos) => followDirection(parsed, startPos, 0, -1)),
-    ...[
-      ...prefillArray(parsed.length, (idx) => ({ x: 0, y: idx })),
-      ...prefillArray(parsed[0].length - 1, (idx) => ({ x: idx + 1, y: 0 })),
-    ].map((startPos) => followDirection(parsed, startPos, 1, 1)),
-    ...[
-      ...prefillArray(parsed.length, (idx) => ({
-        x: parsed[0].length - 1,
-        y: idx,
-      })),
-      ...prefillArray(parsed[0].length - 1, (idx) => ({
-        x: idx,
-        y: parsed.length - 1,
-      })),
-    ].map((startPos) => followDirection(parsed, startPos, -1, -1)),
-    ...[
-      ...prefillArray(parsed[0].length, (idx) => ({ x: idx, y: 0 })),
-      ...prefillArray(parsed.length - 1, (idx) => ({
-        x: parsed[0].length - 1,
-        y: idx + 1,
-      })),
-    ].map((startPos) => followDirection(parsed, startPos, -1, 1)),
-    ...[
-      ...prefillArray(parsed[0].length, (idx) => ({
-        x: idx,
-        y: parsed.length - 1,
-      })),
-      ...prefillArray(parsed.length - 1, (idx) => ({ x: 0, y: idx })),
-    ].map((startPos) => followDirection(parsed, startPos, 1, -1)),
-  ];
-  const first = reads.map(count).reduce((a, b) => a + b, 0);
+  const first = parsed
+    .map(
+      (line, y) =>
+        line
+          .map((c, x) => ({ x, y }))
+          .map((pos) => [
+            read(parsed, pos, 1, 0, 4),
+            read(parsed, pos, 0, 1, 4),
+            read(parsed, pos, -1, 0, 4),
+            read(parsed, pos, 0, -1, 4),
+            read(parsed, pos, 1, 1, 4),
+            read(parsed, pos, -1, 1, 4),
+            read(parsed, pos, 1, -1, 4),
+            read(parsed, pos, -1, -1, 4),
+          ])
+          .flat()
+          .filter((s) => s === "XMAS").length
+    )
+    .reduce((a, b) => a + b, 0);
 
-  const getValue = (x: number, y: number) => valueInMap(parsed)({ x, y });
   const second = parsed
-    .map((line, y) =>
-      line
-        .map<number>((c, x) =>
-          c === "A" &&
-          [getValue(x + 1, y + 1), getValue(x - 1, y - 1)].sort().join("") ===
-            "MS" &&
-          [getValue(x + 1, y - 1), getValue(x - 1, y + 1)].sort().join("") ===
-            "MS"
-            ? 1
-            : 0
-        )
-        .reduce((a, b) => a + b, 0)
+    .map(
+      (line, y) =>
+        line
+          .map((c, x) => [
+            read(parsed, { x: x - 1, y: y - 1 }, 1, 1, 3),
+            read(parsed, { x: x - 1, y: y + 1 }, 1, -1, 3),
+          ])
+          .filter(
+            ([a, b]) =>
+              (a === "MAS" || a === "SAM") && (b === "MAS" || b === "SAM")
+          ).length
     )
     .reduce((a, b) => a + b, 0);
   console.log(first, second);
 }
 
-function followDirection(
+function read(
   parsed: string[][],
-  start: IPosition,
+  pos: IPosition,
   dx: number,
-  dy: number
-) {
-  const { x, y } = start;
-  let result = parsed[y][x];
-  let xx = x + dx;
-  let yy = y + dy;
-  while (parsed[yy]?.[xx] !== undefined) {
-    result += parsed[yy][xx];
-    xx += dx;
-    yy += dy;
-  }
-  return result;
-}
-
-function count(read: string) {
-  return (read.match(/XMAS/g) || []).length;
+  dy: number,
+  count: number
+): string {
+  if (count <= 0) return "";
+  return (
+    valueInMap(parsed)(pos) +
+    read(parsed, { x: pos.x + dx, y: pos.y + dy }, dx, dy, count - 1)
+  );
 }
