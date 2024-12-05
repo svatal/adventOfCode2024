@@ -13,25 +13,18 @@ export function doIt(progress: (...params: any[]) => void) {
   const updates = updatesS.split(`\n`).map((line) => line.split(","));
   const first = updates
     .filter((line) => test(line, disallowed))
-    .map((line) => line[Math.floor(line.length / 2)])
-    .reduce((acc, cur) => acc + +cur, 0);
+    .reduce((acc, line) => acc + +line[Math.floor(line.length / 2)], 0);
   const second = updates
     .filter((line) => !test(line, disallowed))
     .map((line) => reorder(line, disallowed))
-    .map((line) => line[Math.floor(line.length / 2)])
-    .reduce((acc, cur) => acc + +cur, 0);
+    .reduce((acc, line) => acc + +line[Math.floor(line.length / 2)], 0);
   console.log(first, second);
 }
 
 function test(arr: string[], disallowed: Set<string>) {
-  for (let i = 0; i < arr.length - 1; i++) {
-    for (let j = i + 1; j < arr.length; j++) {
-      if (disallowed.has(`${arr[i]}|${arr[j]}`)) {
-        return false;
-      }
-    }
-  }
-  return true;
+  return arr.every((a, i) =>
+    arr.slice(i).every((b) => !disallowed.has(`${a}|${b}`))
+  );
 }
 
 function reorder(arr: string[], disallowed: Set<string>) {
