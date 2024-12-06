@@ -4,6 +4,7 @@ import {
   Direction,
   followDirection,
   IPosition,
+  posFromString,
   posToString,
   valueInMap,
 } from "./utils/position2D";
@@ -24,19 +25,15 @@ export function doIt(progress: (...params: any[]) => void) {
   const first = visited.size;
 
   let second = 0;
-  maze.forEach((line, y) => {
-    line.forEach((cell, x) => {
-      if (cell !== ".") {
-        return;
-      }
-      const newLine = [...line];
-      newLine[x] = "#";
-      const newMaze = [...maze];
-      newMaze[y] = newLine;
-      const [_, loop] = exploreMaze(newMaze, position, direction);
-      second += loop ? 1 : 0;
-    });
-  }, 0);
+  visited.forEach((posS) => {
+    const { x, y } = posFromString(posS);
+    const newMaze = [...maze];
+    newMaze[y] = [...newMaze[y]];
+    newMaze[y][x] = "#";
+    const [_, loop] = exploreMaze(newMaze, position, direction);
+    second += loop ? 1 : 0;
+  });
+
   console.log(first, second);
 }
 
