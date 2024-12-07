@@ -15,7 +15,13 @@ export function doIt(progress: (...params: any[]) => void) {
     .filter((line) => canMatch(line, (a, b) => [a + b, a * b]))
     .reduce((acc, line) => acc + line.res, 0);
   const second = parsed
-    .filter((line) => canMatch(line, (a, b) => [a + b, a * b, +`${a}${b}`]))
+    .filter((line) =>
+      canMatch(line, (a, b) => [
+        a + b,
+        a * b,
+        a * Math.pow(10, Math.ceil(Math.log10(b + 1))) + b, // +`${a}${b}` is more readable but slower
+      ])
+    )
     .reduce((acc, line) => acc + line.res, 0);
   console.log(first, second);
 }
