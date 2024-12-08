@@ -3,6 +3,8 @@ import { input } from "./08-input";
 import {
   existIn,
   IPosition,
+  minus,
+  plus,
   posFromString,
   posToString,
 } from "./utils/position2D";
@@ -24,10 +26,9 @@ export function doIt(progress: (...params: any[]) => void) {
   antenas.forEach((positions) => {
     positions.forEach((pos1, i) => {
       positions.slice(i + 1).forEach((pos2) => {
-        const dx = pos1.x - pos2.x;
-        const dy = pos1.y - pos2.y;
-        antinodes.add(posToString({ x: pos1.x + dx, y: pos1.y + dy }));
-        antinodes.add(posToString({ x: pos2.x - dx, y: pos2.y - dy }));
+        const diff = minus(pos1, pos2);
+        antinodes.add(posToString(plus(pos1, diff)));
+        antinodes.add(posToString(minus(pos2, diff)));
       });
     });
   });
@@ -39,19 +40,16 @@ export function doIt(progress: (...params: any[]) => void) {
   antenas.forEach((positions) => {
     positions.forEach((pos1, i) => {
       positions.slice(i + 1).forEach((pos2) => {
-        let dx = pos1.x - pos2.x;
-        let dy = pos1.y - pos2.y;
-        let pos = { ...pos1 };
+        const diff = minus(pos1, pos2);
+        let pos = pos1;
         do {
           antinodes2.add(posToString(pos));
-          pos.x += dx;
-          pos.y += dy;
+          pos = plus(pos, diff);
         } while (existIn(parsed)(pos));
         pos = { ...pos1 };
         do {
           antinodes2.add(posToString(pos));
-          pos.x -= dx;
-          pos.y -= dy;
+          pos = minus(pos, diff);
         } while (existIn(parsed)(pos));
       });
     });

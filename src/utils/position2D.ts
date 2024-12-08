@@ -89,3 +89,11 @@ export function followDirection(
       return { x, y: y + steps };
   }
 }
+
+export function plus(a: IPosition, b: IPosition): IPosition {
+  return { x: a.x + b.x, y: a.y + b.y };
+}
+
+export function minus(a: IPosition, b: IPosition): IPosition {
+  return { x: a.x - b.x, y: a.y - b.y };
+}
