@@ -97,3 +97,7 @@ export function plus(a: IPosition, b: IPosition): IPosition {
 export function minus(a: IPosition, b: IPosition): IPosition {
   return { x: a.x - b.x, y: a.y - b.y };
 }
+
+export function times(a: IPosition, b: number): IPosition {
+  return { x: a.x * b, y: a.y * b };
+}
