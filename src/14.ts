@@ -1,7 +1,6 @@
 // import { testInput as input } from "./14-input";
 import { input } from "./14-input";
 import { IPosition, plus, posToString, times } from "./utils/position2D";
-import { logEvery } from "./utils/log";
 import { prefillArray } from "./utils/util";
 
 export function doIt(progress: (...params: any[]) => void) {
@@ -61,13 +60,6 @@ export function doIt(progress: (...params: any[]) => void) {
         [...stat.values()].filter((v) => v % 2 === 1).length
       );
     }
-
-    // let cErr = 0;
-    // map.forEach((pos, i) => {
-    //   map.slice(i + 1).forEach((pos2) => {
-    //     cErr += Math.abs(pos.x - pos2.x) + Math.abs(pos.y - pos2.y);
-    //   });
-    // });
 
     err = Math.min(err, cErr);
     progress(i, err, cErr);
