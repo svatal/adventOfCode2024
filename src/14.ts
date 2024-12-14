@@ -2,6 +2,7 @@
 import { input } from "./14-input";
 import { IPosition, plus, posToString, times } from "./utils/position2D";
 import { logEvery } from "./utils/log";
+import { prefillArray } from "./utils/util";
 
 export function doIt(progress: (...params: any[]) => void) {
   // const w = 11;
@@ -44,24 +45,40 @@ export function doIt(progress: (...params: any[]) => void) {
       velocity,
     }));
     const map = iter.map(({ position }) => position);
-    //   .map(({ x, y }) => ({ x: Math.abs(x - wm), y }))
-    //   .filter(({ x }) => x !== 0)
-    //   .map(posToString)
-    //   .reduce(
-    //     (acc, a) => acc.set(a, (acc.get(a) ?? 0) + 1),
-    //     new Map<string, number>()
-    //   );
-    // const cErr = [...map.values()].filter((v) => v % 2 === 1).length;
-    let cErr = 0;
-    map.forEach((pos, i) => {
-      map.slice(i + 1).forEach((pos2) => {
-        cErr += Math.abs(pos.x - pos2.x) + Math.abs(pos.y - pos2.y);
-      });
-    });
+
+    let cErr = Number.MAX_SAFE_INTEGER;
+    for (let i = 10; i < w - 10; i++) {
+      const stat = map
+        .map(({ x, y }) => ({ x: Math.abs(x - i), y }))
+        .filter(({ x }) => x !== 0)
+        .map(posToString)
+        .reduce(
+          (acc, a) => acc.set(a, (acc.get(a) ?? 0) + 1),
+          new Map<string, number>()
+        );
+      cErr = Math.min(
+        cErr,
+        [...stat.values()].filter((v) => v % 2 === 1).length
+      );
+    }
+
+    // let cErr = 0;
+    // map.forEach((pos, i) => {
+    //   map.slice(i + 1).forEach((pos2) => {
+    //     cErr += Math.abs(pos.x - pos2.x) + Math.abs(pos.y - pos2.y);
+    //   });
+    // });
 
     err = Math.min(err, cErr);
     progress(i, err, cErr);
-    if (err === 5013062) break;
+    if (err < 200) {
+      const p = prefillArray(h, () => prefillArray(w, () => "."));
+      map.forEach(({ x, y }) => {
+        p[y][x] = "#";
+      });
+      console.log(p.map((l) => l.join("")).join("\n"));
+      break;
+    }
   }
   const second = i;
   console.log(first, second);
