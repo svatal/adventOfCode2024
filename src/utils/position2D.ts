@@ -87,6 +87,8 @@ export function followDirection(
       return { x, y: y - steps };
     case "v":
       return { x, y: y + steps };
+    default:
+      throw `Unknown direction ${dir}`;
   }
 }
 
