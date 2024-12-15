@@ -17,24 +17,33 @@ export function doIt(progress: (...params: any[]) => void) {
   console.log(first, second);
 }
 
-function do1(mazeS: string, dirs: Direction[]) {
+function getMovables(maze: string[][]) {
   const boxes = new Set<string>();
   let robot: IPosition = { x: 0, y: 0 };
-  const maze = mazeS.split(`\n`).map((row) => row.split(``));
   maze.forEach((row, y) =>
     row.forEach((cell, x) => {
       if (cell === "O") boxes.add(posToString({ x, y }));
       else if (cell === `@`) robot = { x, y };
     })
   );
+  return { boxes, robot };
+}
+
+function getGps(boxes: Set<string>) {
+  return [...boxes]
+    .map(posFromString)
+    .reduce((acc, pos) => acc + pos.x + 100 * pos.y, 0);
+}
+
+function do1(mazeS: string, dirs: Direction[]) {
+  const maze = mazeS.split(`\n`).map((row) => row.split(``));
+  let { boxes, robot } = getMovables(maze);
   dirs.forEach((dir) => {
     const newPos = followDirection(robot, dir);
     if (tryMove(newPos, dir)) robot = newPos;
   });
 
-  return [...boxes]
-    .map(posFromString)
-    .reduce((acc, pos) => acc + pos.x + 100 * pos.y, 0);
+  return getGps(boxes);
 
   function tryMove(pos: IPosition, dir: Direction) {
     if (valueInMap(maze)(pos) === `#`) return false;
@@ -48,19 +57,12 @@ function do1(mazeS: string, dirs: Direction[]) {
 }
 
 function do2(mazeS: string, dirs: Direction[]) {
-  const boxes = new Set<string>();
-  let robot: IPosition = { x: 0, y: 0 };
   const maze = mazeS
     .split(`\n`)
     .map((row) =>
       row.replace(/./g, (m) => `${m}${m === "#" ? m : "."}`).split(``)
     );
-  maze.forEach((row, y) =>
-    row.forEach((cell, x) => {
-      if (cell === "O") boxes.add(posToString({ x, y }));
-      else if (cell === `@`) robot = { x, y };
-    })
-  );
+  let { boxes, robot } = getMovables(maze);
   dirs.forEach((dir) => {
     const newPos = followDirection(robot, dir);
     if (tryMove(newPos, dir, false)) {
@@ -69,9 +71,7 @@ function do2(mazeS: string, dirs: Direction[]) {
     }
   });
 
-  return [...boxes]
-    .map(posFromString)
-    .reduce((acc, pos) => acc + pos.x + 100 * pos.y, 0);
+  return getGps(boxes);
 
   function tryMove(pos: IPosition, dir: Direction, applyMove: boolean) {
     if (valueInMap(maze)(pos) === `#`) return false;
@@ -96,8 +96,9 @@ function do2(mazeS: string, dirs: Direction[]) {
       if (dir === ">") {
         if (!boxes.has(posToString(pos))) return true;
         const newPos = followDirection(pos, dir);
+        // box is wider, we need to check +1 position
         if (!tryMove(followDirection(newPos, dir), dir, applyMove))
-          return false; // box is wider
+          return false;
         if (applyMove) {
           boxes.delete(posToString(pos));
           boxes.add(posToString(newPos));
