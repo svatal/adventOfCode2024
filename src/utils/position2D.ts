@@ -56,6 +56,32 @@ export function valueInMap<T>(
 export type Direction = "v" | ">" | "^" | "<";
 export type Orientation = "|" | "-";
 
+export function toLeft(d: Direction): Direction {
+  switch (d) {
+    case ">":
+      return "^";
+    case "^":
+      return "<";
+    case "<":
+      return "v";
+    case "v":
+      return ">";
+  }
+}
+
+export function toRight(d: Direction): Direction {
+  switch (d) {
+    case ">":
+      return "v";
+    case "v":
+      return "<";
+    case "<":
+      return "^";
+    case "^":
+      return ">";
+  }
+}
+
 export const directionToOrientation: Record<Direction, Orientation> = {
   v: "|",
   ">": "-",
