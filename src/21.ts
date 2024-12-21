@@ -6,46 +6,16 @@ export function doIt(progress: (...params: any[]) => void) {
   const codes = lines.map((line) => line.split("") as Code[]);
   const first = codes
     .map(codeToMoves)
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => Math.min(...moves.map((d) => d.length)))
+    .map((moves) => moves.flatMap((m) => dirToMoves2(m, 2)))
+    .map((moves) => Math.min(...moves))
     .reduce((a, b, i) => a + b * parseInt(lines[i]), 0);
-  // for (let i = 0; i < codes.length; i++) {
-  //   let x = codeToMoves(codes[i]);
-  //   for (let j = 0; j < 25; j++) {
-  //     x = x.flatMap(dirToMoves);
-  //     progress(i, j, x.length, x[0].length);
-  //   }
-  // }
+
   const second = codes
     .map(codeToMoves)
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => moves.flatMap(dirToMoves))
-    .map((moves) => Math.min(...moves.map((d) => d.length)))
+    .map((moves) => moves.flatMap((m) => dirToMoves2(m, 25)))
+    .map((moves) => Math.min(...moves))
     .reduce((a, b, i) => a + b * parseInt(lines[i]), 0);
+
   console.log(first, second);
 }
 
@@ -97,45 +67,51 @@ const codeToPos = {
 };
 type Code = keyof typeof codeToPos;
 
-function dirToMoves(dirs: Dir[]) {
+const cache = new Map<string, number>();
+
+function dirToMoves2(dirs: Dir[], times: number): number {
+  if (times === 0) {
+    return dirs.length;
+  }
   const start = dirToPos["A"];
   const targets = dirs.map((c) => dirToPos[c]);
   const moves = targets
     .map((target, i) => {
       const prev = i === 0 ? start : targets[i - 1];
+      const cacheKey = `${i === 0 ? "A" : dirs[i - 1]}-${dirs[i]}-${times - 1}`;
+      if (cache.has(cacheKey)) {
+        return cache.get(cacheKey)!;
+      }
       let dx = target.x - prev.x;
       let dy = target.y - prev.y;
       const dxP = dx > 0 ? ">".repeat(dx) : "";
       const dyP = dy > 0 ? "v".repeat(dy) : "";
       const dxN = dx < 0 ? "<".repeat(-dx) : "";
       const dyN = dy < 0 ? "^".repeat(-dy) : "";
+
+      let str: string[] = [];
       if (
         Math.min(target.x, prev.x) === 0 &&
         Math.min(target.y, prev.y) === 0
       ) {
         // do not start with dxN or dyN
-        return [`${dxP}${dyP}${dxN}${dyN}A`];
+        str = [`${dxP}${dyP}${dxN}${dyN}A`];
+      } else {
+        const x = `${dxP}${dxN}`;
+        const y = `${dyP}${dyN}`;
+        if (x.length === 0 || y.length === 0) {
+          str = [`${x}${y}A`];
+        }
+        str = [`${x}${y}A`, `${y}${x}A`];
       }
-      const x = `${dxP}${dxN}`;
-      const y = `${dyP}${dyN}`;
-      if (x.length === 0 || y.length === 0) {
-        return [`${x}${y}A`];
-      }
-      return [`${x}${y}A`, `${y}${x}A`];
-      // return [`${x}${y}A`];
+      const len = Math.min(
+        ...str.map((s) => dirToMoves2(s.split("") as Dir[], times - 1))
+      );
+      cache.set(cacheKey, len);
+      return len;
     })
-    .map((m) => m.map((m2) => m2.split("") as Dir[]));
-  const variants = moves.reduce(
-    (acc, val) => acc.flatMap((c) => val.map((v) => [...c, ...v])),
-    [[]] as Dir[][]
-  );
-  let minLength = Number.MAX_SAFE_INTEGER;
-  variants.forEach((v) => {
-    if (v.length < minLength) {
-      minLength = v.length;
-    }
-  });
-  return variants.filter((v) => v.length === minLength);
+    .reduce((a, b) => a + b, 0);
+  return moves;
 }
 
 const dirToPos = {
