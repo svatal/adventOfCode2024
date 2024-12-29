@@ -1,5 +1,4 @@
 // import { testInput as input } from "./24-input";
-import { get } from "http";
 import { input } from "./24-input";
 
 export function doIt(progress: (...params: any[]) => void) {
@@ -40,161 +39,128 @@ export function doIt(progress: (...params: any[]) => void) {
   }
   const first = getNumber(values, `z`);
 
-  for (let i = 0; i < gates.length; i++) {
-    for (let j = i + 1; j < gates.length; j++) {
-      const gates2 = [...gates.slice(i + 1, j), ...gates.slice(j + 1)];
-      for (let k = 0; k < gates2.length; k++) {
-        for (let l = k + 1; l < gates2.length; l++) {
-          const gates3 = [...gates2.slice(k + 1, l), ...gates2.slice(l + 1)];
-          for (let m = 0; m < gates3.length; m++) {
-            for (let n = m + 1; n < gates3.length; n++) {
-              const gates4 = [
-                ...gates3.slice(m + 1, n),
-                ...gates3.slice(n + 1),
-              ];
-              for (let o = 0; o < gates4.length; o++) {
-                for (let p = o + 1; p < gates4.length; p++) {
-                  const gates5 = [
-                    ...gates4.slice(o + 1, p),
-                    ...gates4.slice(p + 1),
-                  ];
-                  progress(i, j, k, l, m, n, o, p);
-                  const gs = [
-                    ...gates5,
-                    ...getSwitched(gates, i, j),
-                    ...getSwitched(gates2, k, l),
-                    ...getSwitched(gates3, m, n),
-                    ...getSwitched(gates4, o, p),
-                  ];
-                  if (
-                    testPlus(values, gs) &&
-                    testInputs.every(([x, y]) =>
-                      testPlus(
-                        new Map(
-                          [...values.entries()].map(
-                            ([k, v]) =>
-                              [
-                                k,
-                                k.startsWith("x")
-                                  ? x[+k.slice(1)] === "1"
-                                  : y[+k.slice(1)] === "1",
-                              ] as const
-                          )
-                        ),
-                        gs
-                      )
-                    )
-                  ) {
-                    console.log(i, j, k, l, m, n, o, p);
-                    console.log(
-                      [
-                        gates[i],
-                        gates[j],
-                        gates2[k],
-                        gates2[l],
-                        gates3[m],
-                        gates3[n],
-                        gates4[o],
-                        gates4[p],
-                      ]
-                        .map((gate) => gate.name)
-                        .sort()
-                        .join(`,`)
-                    );
-                    return;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  const second = gates.length;
+  const second = do2(gates);
   console.log(first, second);
 }
 
-let testInputs = [
-  [
-    "10101010101010101010101010101010101010101010",
-    "10101010101010101010101010101010101010101010",
-  ],
-  [
-    "01010101010101010101010101010101010101010101",
-    "10101010101010101010101010101010101010101010",
-  ],
-  [
-    "01010101010101010101010101010101010101010101",
-    "01010101010101010101010101010101010101010101",
-  ],
-  [
-    "11111111111111111111111111111111111111111111",
-    "10000000000000000000000000000000000000000000",
-  ],
-  [
-    "11111111111111111111111111111111111111111111",
-    "11111111111111111111111111111111111111111111",
-  ],
-];
+function do2(gates: { operation: string; inputs: string[]; name: string }[]) {
+  const zs = gates
+    .map((g) => g.name)
+    .filter((name) => name.startsWith(`z`))
+    .sort();
+  const gatesMap = new Map(gates.map((g) => [g.name, g]));
+  let validatedGates = new Set<string>();
+  let switchedGates = new Set<string>();
+  for (let i = 0; i < zs.length; i++) {
+    const usedGates = new Set<string>();
+    const one = Math.pow(2, i);
+    let evals: [() => boolean, boolean][] = [
+      [() => tryEval(zs[i], 0, 0, usedGates), false],
+      [() => tryEval(zs[i], one, 0, usedGates), true],
+      [() => tryEval(zs[i], 0, one, usedGates), true],
+      [() => tryEval(zs[i], one, one, usedGates), false],
+    ];
+    if (i > 0) {
+      const lesserOne = Math.pow(2, i - 1);
+      evals.push(
+        [() => tryEval(zs[i], lesserOne, lesserOne, usedGates), true],
+        [() => tryEval(zs[i], one + lesserOne, lesserOne, usedGates), false],
+        [() => tryEval(zs[i], lesserOne, one + lesserOne, usedGates), false],
+        [
+          () => tryEval(zs[i], one + lesserOne, one + lesserOne, usedGates),
+          true,
+        ]
+      );
+    }
+    if (i === zs.length - 1) {
+      const lesserOne = Math.pow(2, i - 1);
+      evals = [
+        [() => tryEval(zs[i], 0, 0, usedGates), false],
+        [() => tryEval(zs[i], lesserOne, 0, usedGates), false],
+        [() => tryEval(zs[i], 0, lesserOne, usedGates), false],
+        [() => tryEval(zs[i], lesserOne, lesserOne, usedGates), true],
+      ];
+    }
+    if (evals.every(([fn, expected]) => fn() === expected)) {
+      console.log("validated", zs[i], validatedGates.size, usedGates.size);
+      validatedGates = new Set([...validatedGates, ...usedGates]);
 
-function getSwitched(
-  gates: { operation: string; inputs: string[]; name: string }[],
-  i: number,
-  j: number
-) {
-  return [
-    { ...gates[i], name: gates[j].name },
-    { ...gates[j], name: gates[i].name },
-  ];
+      continue;
+    }
+    const candidates = [...usedGates].filter((g) => !validatedGates.has(g));
+    console.log("error found:", i, zs[i], candidates, getEq(gatesMap, zs[i]));
+    let best:
+      | { candidate: string; other: string; usedGates: Set<string> }
+      | undefined = undefined;
+    for (const candidate of candidates) {
+      const candidateGate = gatesMap.get(candidate)!;
+      const others = [...gatesMap.keys()].filter(
+        (g) => g !== candidate && !validatedGates.has(g)
+      );
+      for (const other of others) {
+        const otherGate = gatesMap.get(other)!;
+        gatesMap.set(candidate, otherGate);
+        gatesMap.set(other, candidateGate);
+        usedGates.clear();
+        if (evals.every(([fn, expected]) => fn() === expected)) {
+          if (!best || usedGates.size < best.usedGates.size)
+            best = { candidate, other, usedGates: new Set(usedGates) };
+        }
+        gatesMap.set(other, otherGate);
+        gatesMap.set(candidate, candidateGate);
+      }
+    }
+    if (best) {
+      const candidateGate = gatesMap.get(best.candidate)!;
+      gatesMap.set(best.candidate, gatesMap.get(best.other)!);
+      gatesMap.set(best.other, candidateGate);
+      switchedGates.add(best.candidate);
+      switchedGates.add(best.other);
+      validatedGates = new Set([...validatedGates, ...best.usedGates]);
+      console.log("switched", best.candidate, best.other);
+      console.log(getEq(gatesMap, zs[i]));
+    }
+  }
+  return [...switchedGates].sort().join(",");
+
+  function tryEval(
+    gateName: string,
+    x: number,
+    y: number,
+    usedGates: Set<string>,
+    currentPath: string[] = []
+  ): boolean {
+    if (currentPath.includes(gateName)) return false;
+    if (gateName.startsWith(`x`))
+      return Math.floor(x / Math.pow(2, +gateName.slice(1))) % 2 !== 0;
+    if (gateName.startsWith(`y`))
+      return Math.floor(y / Math.pow(2, +gateName.slice(1))) % 2 !== 0;
+    const gate = gatesMap.get(gateName)!;
+    usedGates.add(gateName);
+    const [a, b] = gate.inputs.map((input) =>
+      tryEval(input, x, y, usedGates, [...currentPath, gateName])
+    );
+    switch (gate.operation) {
+      case `AND`:
+        return a && b;
+      case `OR`:
+        return a || b;
+      case `XOR`:
+        return a !== b;
+    }
+    throw new Error(`Unknown operation: ${gate.operation}`);
+  }
 }
 
-function testPlus(
-  inputs: Map<string, boolean>,
-  gates: { operation: string; inputs: string[]; name: string }[]
-) {
-  const values = new Map(inputs);
-  const x = getNumber(values, `x`);
-  const y = getNumber(values, `y`);
-  const z = x + y;
-  while (gates.length) {
-    const unsolved = [];
-    for (const gate of gates) {
-      const inputs = gate.inputs.map((input) => values.get(input));
-      if (inputs.includes(undefined)) {
-        unsolved.push(gate);
-        continue;
-      }
-      const [a, b] = inputs;
-      let res = false;
-      switch (gate.operation) {
-        case `AND`:
-          res = a! && b!;
-          break;
-        case `OR`:
-          res = a! || b!;
-          break;
-        case `XOR`:
-          res = a !== b;
-          break;
-      }
-      if (gate.name.startsWith(`z`)) {
-        if (res !== !!(z & Math.pow(2, +gate.name.slice(1)))) {
-          // console.log(
-          //   "nope",
-          //   gate.name,
-          //   res,
-          //   !!(z & Math.pow(2, +gate.name.slice(1)))
-          // );
-          return false;
-        }
-      }
-      values.set(gate.name, res);
-    }
-    if (gates.length === unsolved.length) return false;
-    gates = unsolved;
-  }
-  return true;
+function getEq(
+  gatesMap: Map<string, { operation: string; inputs: string[]; name: string }>,
+  name: string
+): string {
+  const gate = gatesMap.get(name);
+
+  if (!gate) return name;
+  let [a, b] = gate.inputs.map((input) => getEq(gatesMap, input)).sort();
+  return `(${a} ${gate.operation} ${b})`;
 }
 
 function getNumber(values: Map<string, boolean>, letter: string) {
